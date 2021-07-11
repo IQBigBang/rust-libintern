@@ -175,8 +175,7 @@ impl<'a, T: Hash> Hash for Intern<'a, T> {
 
 #[cfg(test)]
 mod tests {
-    use super::{InternedItemHolder, Interner, Intern};
-    use std::borrow::Borrow;
+    use super::{InternedItemHolder, Interner};
 
     #[test]
     fn interned_item_holder_test() {
@@ -254,7 +253,7 @@ mod tests {
         assert!(!std::ptr::eq(ref_a1.as_ref(), ref_b.as_ref()));
 
         let ref_b2 = int.intern('b');
-        let ref_c = int.intern('c');
+        let _ref_c = int.intern('c');
         assert_eq!(ref_b, ref_b2);
     }
 
