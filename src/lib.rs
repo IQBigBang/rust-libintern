@@ -24,9 +24,7 @@ impl<'a, T: 'a + Eq> Interner<'a, T> {
             _ph: PhantomData 
         }
     }
-}
 
-impl<'a, T: 'a + Eq> Interner<'a, T> {
     /// Intern an item.
     ///
     /// This consumes the item by adding it to the intern-list and returns a reference to it.
@@ -125,8 +123,16 @@ impl<T> InternedItemHolder<T> {
 }
 
 /// A reference to an interned item
-#[derive(Clone, Copy)]
 pub struct Intern<'a, T: 'a>(Pin<&'a T>);
+
+impl<'a, T> Clone for Intern<'a, T> {
+    fn clone(&self) -> Self {
+        Intern(self.0)
+    }
+}
+
+// We must hand implement Copy, because a T: Copy bound is added when using derive
+impl<'a, T> Copy for Intern<'a, T> {}
 
 // Get reference to the inner item
 impl<'a, T> AsRef<T> for Intern<'a, T> {
