@@ -1,6 +1,6 @@
 [package]
 name = "libintern"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["iqbigbang <iqbigbang@gmail.com>"]
 edition = "2018"
 description = "A simple but correct library for interning arbitrary values."
