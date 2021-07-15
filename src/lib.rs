@@ -4,7 +4,7 @@ use std::{borrow::Borrow, fmt::{Debug, Display}, hash::Hash, marker::PhantomData
 ///
 /// An interner is a structure which uniquely owns the interned items,
 /// and provides shared immutable references to those items.
-pub struct Interner<'a, T: Eq> {
+pub struct Interner<'a, T: 'a + Eq> {
     /// A list of holders of the items
     holders: Vec<InternedItemHolder<T>>,
     _ph: PhantomData<&'a T>
@@ -15,7 +15,7 @@ const BEGIN_INTERNER_CAPACITY: usize = 32;
 /// By how much every next interner's capacity changes
 const INTERNER_CAPACITY_DELTA: f32 = 1.5;
 
-impl<T: Eq> Interner<'_, T> {
+impl<'a, T: 'a + Eq> Interner<'a, T> {
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self { 
@@ -26,7 +26,7 @@ impl<T: Eq> Interner<'_, T> {
     }
 }
 
-impl<'a, T: Eq> Interner<'a, T> {
+impl<'a, T: 'a + Eq> Interner<'a, T> {
     /// Intern an item.
     ///
     /// This consumes the item by adding it to the intern-list and returns a reference to it.
@@ -62,6 +62,17 @@ impl<'a, T: Eq> Interner<'a, T> {
         // SAFETY: I believe for the reasons stated above, this is also safe
         let pinned_reference: Pin<&'a T> = unsafe { Pin::new_unchecked(reference) };
         Intern(pinned_reference)
+    }
+
+    pub fn contains(&self, item: &T) -> bool {
+        for holder in &self.holders {
+            for h_item in &holder.items {
+                if item == h_item {
+                    return true
+                }
+            }
+        }
+        false
     }
 
     /// Hold a new item.
@@ -115,7 +126,7 @@ impl<T> InternedItemHolder<T> {
 
 /// A reference to an interned item
 #[derive(Clone, Copy)]
-pub struct Intern<'a, T>(Pin<&'a T>);
+pub struct Intern<'a, T: 'a>(Pin<&'a T>);
 
 // Get reference to the inner item
 impl<'a, T> AsRef<T> for Intern<'a, T> {
