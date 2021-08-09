@@ -101,6 +101,9 @@ impl<'a, T: 'a + Eq> Interner<'a, T> {
         Intern(pinned_reference)
     }
 
+    pub fn iter<'this>(&'this self) -> Iter<'this, 'a, T> {
+        Iter { interner: self, holder_id: 0, inside_holder_id: 0 }
+    }
 }
 
 /// A wrapper around a vector, which guarantees that
@@ -194,6 +197,29 @@ impl<'a, T> Eq for Intern<'a, T> {}
 impl<'a, T: Hash> Hash for Intern<'a, T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.as_ref().hash(state)
+    }
+}
+
+pub struct Iter<'a, 'intern, T: std::cmp::Eq> {
+    interner: &'a Interner<'intern, T>,
+    holder_id: usize,
+    inside_holder_id: usize
+}
+
+impl<'a, 'intern, T: std::cmp::Eq> Iterator for Iter<'a, 'intern, T> {
+    type Item = Intern<'intern, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let holder = self.interner.holders.get(self.holder_id)?;
+        let item = &holder.items[self.inside_holder_id];
+        if self.inside_holder_id == holder.items.len() - 1 {
+            //if this is the last item inside this holder
+            self.holder_id += 1;
+            self.inside_holder_id = 0;
+        } else {
+            self.inside_holder_id += 1;
+        }
+        Some(unsafe { self.interner.transmute_held_item(item) })
     }
 }
 
@@ -300,5 +326,20 @@ mod tests {
         assert_eq!(a1, a2);
         assert_ne!(a1, x);
         // TODO: Hash test
+    }
+
+    #[test]
+    fn interner_iter_test() {
+        let mut int = Interner::new();
+        for i in 0..100 {
+            int.intern(i);
+        }
+
+        let collected: Vec<i32> = int.iter().map(|i| *i).collect();
+
+        assert_eq!(
+            collected,
+            (0..100).collect::<Vec<i32>>()
+        );
     }
 }
