@@ -52,14 +52,7 @@ impl<'a, T: 'a + Eq> Interner<'a, T> {
             )
         }
         let reference = result.unwrap();
-        // SAFETY: Via the lifetime <'a>, we guarantee the interner is alive
-        // as long as the references are alive. Furthermore, the data is NEVER
-        // mutated AND only immutable references to the data exist.
-        // Therefore we uphold all guarantees and can assume safety when transmuting
-        let reference: &'a T = unsafe { std::mem::transmute(reference) };
-        // SAFETY: I believe for the reasons stated above, this is also safe
-        let pinned_reference: Pin<&'a T> = unsafe { Pin::new_unchecked(reference) };
-        Intern(pinned_reference)
+        unsafe { self.transmute_held_item(reference) }
     }
 
     pub fn contains(&self, item: &T) -> bool {
@@ -93,6 +86,21 @@ impl<'a, T: 'a + Eq> Interner<'a, T> {
             }
         }
     }
+
+    /// Transmute a reference to an item held by this interner
+    /// into the Intern<T> type.
+    #[inline]
+    unsafe fn transmute_held_item(&self, item: &T) -> Intern<'a, T> {
+        // SAFETY: Via the lifetime <'a>, we guarantee the interner is alive
+        // as long as the references are alive. Furthermore, the data is NEVER
+        // mutated AND only immutable references to the data exist.
+        // Therefore we uphold all guarantees and can assume safety when transmuting
+        let reference: &'a T = std::mem::transmute(item);
+        // SAFETY: I believe for the reasons stated above, this is also safe
+        let pinned_reference: Pin<&'a T> = Pin::new_unchecked(reference);
+        Intern(pinned_reference)
+    }
+
 }
 
 /// A wrapper around a vector, which guarantees that
