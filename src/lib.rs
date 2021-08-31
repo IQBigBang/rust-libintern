@@ -1,4 +1,6 @@
-use std::{borrow::Borrow, fmt::{Debug, Display}, hash::Hash, marker::PhantomData, ops::Deref, pin::Pin};
+#![feature(negative_impls)]
+
+use std::{borrow::Borrow, convert::TryInto, fmt::{Debug, Display}, hash::Hash, marker::PhantomData, ops::Deref, pin::Pin};
 
 /// The interner.
 ///
@@ -9,6 +11,8 @@ pub struct Interner<'a, T: 'a + Eq> {
     holders: Vec<InternedItemHolder<T>>,
     _ph: PhantomData<&'a T>
 }
+
+impl<'a, T> !Sync for Interner<'a, T> {}
 
 /// The capacity of the first InternedItemHolder
 const BEGIN_INTERNER_CAPACITY: usize = 32;
