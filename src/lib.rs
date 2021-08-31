@@ -200,6 +200,19 @@ impl<'a, T: Hash> Hash for Intern<'a, T> {
     }
 }
 
+// Implement PartialOrd and Ord if the item implements it
+impl<'a, T: PartialOrd> PartialOrd for Intern<'a, T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.0.partial_cmp(&other.0)
+    }
+}
+
+impl<'a, T: Ord> Ord for Intern<'a, T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
 pub struct Iter<'a, 'intern, T: std::cmp::Eq> {
     interner: &'a Interner<'intern, T>,
     holder_id: usize,
