@@ -217,6 +217,18 @@ impl<'a, T: Ord> Ord for Intern<'a, T> {
     }
 }
 
+impl<'a, T> Intern<'a, T> {
+    /// Create a new [`Intern`] type from a raw pointer.
+    ///
+    /// # Safety
+    /// The caller must guarantee that the pointed value is in fact
+    /// owned by an [`Interner`] which is still in scope (i.e. not dropped)
+    /// and that the pointer will not be mutated and/or moved.
+    pub unsafe fn from_raw(ptr: *const T) -> Self {
+        Intern(Pin::new_unchecked(ptr.as_ref().unwrap()))
+    }
+}
+
 pub struct Iter<'a, 'intern, T: std::cmp::Eq> {
     interner: &'a Interner<'intern, T>,
     holder_id: usize,
