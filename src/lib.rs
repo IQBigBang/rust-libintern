@@ -1,6 +1,6 @@
 #![feature(negative_impls)]
 
-use std::{borrow::Borrow, convert::TryInto, fmt::{Debug, Display}, hash::Hash, marker::PhantomData, ops::Deref, pin::Pin};
+use std::{borrow::Borrow, fmt::{Debug, Display}, hash::Hash, marker::PhantomData, ops::Deref, pin::Pin};
 
 /// The interner.
 ///
@@ -137,7 +137,19 @@ impl<T> InternedItemHolder<T> {
     }
 }
 
-/// A reference to an interned item
+/// A reference to an interned item.
+///
+/// The main advantage of this type over just
+/// an immutable reference is that its pointer is guaranteed to be unique
+/// within a single [`Interner`]. Therefore comparisons
+/// are very cheap.
+///
+/// # Note about hashing
+///
+/// This wrapper implements [`PartialEq`] by comparing its inner pointer.
+/// In order to keep consistency, the [`Hash`] trait is also implemented
+/// by hashing the pointer, NOT the inner value. Therefore hashes
+/// of the `Intern<T>` type are different than hashes of the `T`.
 pub struct Intern<'a, T: 'a>(Pin<&'a T>);
 
 impl<'a, T> Clone for Intern<'a, T> {
@@ -197,10 +209,12 @@ impl<'a, T> PartialEq for Intern<'a, T> {
 
 impl<'a, T> Eq for Intern<'a, T> {}
 
-// Implement Hash if the item implements Hash
-impl<'a, T: Hash> Hash for Intern<'a, T> {
+// Implement Hash
+// 
+/// To keep consistency with [`PartialEq`], we hash the pointer, not the value
+impl<'a, T> Hash for Intern<'a, T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.as_ref().hash(state)
+        std::ptr::hash(self.0.get_ref(), state)
     }
 }
 
